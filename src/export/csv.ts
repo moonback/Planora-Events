@@ -9,7 +9,9 @@ const cell = (v: string | number) => {
   const s = String(v);
   return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
-const toCsv = (rows: (string | number)[][]) => '﻿' + rows.map((r) => r.map(cell).join(';')).join('\r\n') + '\r\n';
+const BOM = String.fromCharCode(0xfeff);
+const BOM_RE = new RegExp(`^${BOM}`);
+const toCsv = (rows: (string | number)[][]) => BOM + rows.map((r) => r.map(cell).join(';')).join('\r\n') + '\r\n';
 
 /** Nomenclature agrégée : une ligne par modèle et dimensions, avec répartition par zone. */
 export function bomCsv(doc: PlanDocument): string {
@@ -66,7 +68,7 @@ export interface CatalogImport {
  * nom ; largeur_mm ; profondeur_mm ; places ; forme (rect|round) ; couleur (#rrggbb, facultatif).
  */
 export function parseCatalogCsv(text: string): CatalogImport {
-  const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
+  const lines = text.replace(BOM_RE, '').split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return { templates: [], errors: ['Le fichier ne contient aucune ligne de données.'] };
   const sep = lines[0]!.includes(';') ? ';' : ',';
   const header = splitLine(lines[0]!, sep).map((h) => h.toLowerCase());

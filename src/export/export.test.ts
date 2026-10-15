@@ -47,7 +47,7 @@ describe('exports', () => {
 
   it('CSV : nomenclature cohérente avec le plan et liste détaillée', () => {
     const csv = bomCsv(doc);
-    expect(csv.startsWith('﻿')).toBe(true);
+    expect(csv.charCodeAt(0) === 0xfeff).toBe(true);
     const total = csv.trim().split('\r\n').at(-1)!.split(';');
     expect(Number(total[5])).toBe(doc.objects.length);
     expect(Number(total[6])).toBe(40);
