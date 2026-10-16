@@ -4,7 +4,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type DragEvent
 import { Arc, Circle, Ellipse, Group, Image as KImage, Layer, Line, Rect, Shape, Stage, Text, Transformer } from 'react-konva';
 import { newId } from '../domain/document';
 import { boxOfPoints, distance, isSimplePolygon, normalizeAngle, objectBox, snapTo, type Box } from '../domain/geometry';
-import { moveObjects } from '../domain/operations';
 import type { PlanObject, Point, Zone } from '../domain/types';
 import { formatLength, parseNumber } from '../domain/units';
 import type { Issue } from '../domain/validation';
@@ -214,26 +213,35 @@ export function PlanCanvas({ issues, interactive = true, onError }: PlanCanvasPr
     [otherBoxes],
   );
 
-  const onObjectDragEnd = useCallback(
-    (e: KonvaEventObject<DragEvent>, o: PlanObject) => {
-      setGuides({ x: null, y: null });
-      const st = useEditor.getState();
-      let dx = e.target.x() - o.x;
-      let dy = e.target.y() - o.y;
-      const ids = st.selection.includes(o.id) ? st.selection : [o.id];
-      const g = st.history.present.settings;
-      if (ids.length > 1 && g.snap) {
-        dx = snapTo(dx, g.gridSize / 2);
-        dy = snapTo(dy, g.gridSize / 2);
-      }
-      if (dx === 0 && dy === 0) {
-        e.target.position({ x: o.x, y: o.y });
-        return;
-      }
-      st.apply((d) => moveObjects(d, ids, dx, dy));
-    },
-    [],
-  );
+  // En déplacement groupé, Konva émet « dragend » pour chaque nœud du transformateur : le traitement est
+  // donc idempotent (positions lues sur les nœuds, aucune étape d'historique si rien ne change).
+  const onObjectDragEnd = useCallback((e: KonvaEventObject<DragEvent>, o: PlanObject) => {
+    setGuides({ x: null, y: null });
+    const st = useEditor.getState();
+    const stage = e.target.getStage();
+    const ids = new Set(st.selection.includes(o.id) ? st.selection : [o.id]);
+    const g = st.history.present.settings;
+    // Accrochage du groupe : correction appliquée uniformément à partir du nœud saisi.
+    const rawDx = e.target.x() - o.x;
+    const rawDy = e.target.y() - o.y;
+    const multi = ids.size > 1 && g.snap;
+    const cx = multi ? snapTo(rawDx, g.gridSize / 2) - rawDx : 0;
+    const cy = multi ? snapTo(rawDy, g.gridSize / 2) - rawDy : 0;
+    st.apply((d) => {
+      let changed = false;
+      const objects = d.objects.map((obj) => {
+        if (!ids.has(obj.id) || obj.locked) return obj;
+        const n = obj.id === o.id ? e.target : stage?.findOne(`#${obj.id}`);
+        if (!n) return obj;
+        const x = Math.round(n.x() + cx);
+        const y = Math.round(n.y() + cy);
+        if (x === obj.x && y === obj.y) return obj;
+        changed = true;
+        return { ...obj, x, y };
+      });
+      return changed ? { ...d, objects } : d;
+    });
+  }, []);
 
   const onTransformEnd = () => {
     const tr = trRef.current;
@@ -292,6 +300,8 @@ export function PlanCanvas({ issues, interactive = true, onError }: PlanCanvasPr
   }, [finishDraft]);
 
   const handleToolClick = (raw: Point) => {
+    // État lu dans le store (pas dans la closure du rendu) : des clics rapprochés ne perdent aucun point.
+    const draft = useEditor.getState().draft;
     const p = tool === 'calibrate' ? raw : snapPoint(raw);
     if (tool === 'wall' || tool === 'zone') {
       if (draft.length >= 3 && distance(p, draft[0]!) < 12 / s) return finishDraft(draft);
@@ -417,7 +427,13 @@ export function PlanCanvas({ issues, interactive = true, onError }: PlanCanvasPr
         onMouseDown={onStageMouseDown}
         onMouseMove={onStageMouseMove}
         onMouseUp={onStageMouseUp}
-        onDblClick={() => draft.length && (tool === 'wall' || tool === 'zone') && finishDraft(draft)}
+        onDblClick={() => {
+          // Konva signale un double-clic pour deux clics rapides même éloignés : on ne termine que si
+          // les deux derniers points coïncident (vrai double-clic), en retirant le doublon.
+          const d = useEditor.getState().draft;
+          const [a, b] = [d[d.length - 2], d[d.length - 1]];
+          if ((tool === 'wall' || tool === 'zone') && a && b && distance(a, b) < 12 / s) finishDraft(d.slice(0, -1));
+        }}
         onWheel={onWheel}
       >
         <Layer listening>

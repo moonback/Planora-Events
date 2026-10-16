@@ -181,7 +181,7 @@ export function generateBanquet(doc: PlanDocument, o: BanquetOptions): LayoutRes
     for (let y = top + bt.width / 2; y <= b.maxY - bt.width / 2 && placed < o.buffets; y += bt.width + o.aisle) {
       if (p.tryPlace(makeObject(bt, x, y, 90, { label: `Buffet ${placed + 1}` }), o.aisle)) placed++;
     }
-    if (placed > 0) p.addZone('Service traiteur', 'traiteur', '#eab308', x + bt.depth / 2, top, b.maxX - x - bt.depth / 2, Math.min(b.maxY - top, placed * (bt.width + o.aisle)), false);
+    if (placed > 0) p.addZone('Service (arrière-buffet)', 'traiteur', '#eab308', x + bt.depth / 2, top, b.maxX - x - bt.depth / 2, Math.min(b.maxY - top, placed * (bt.width + o.aisle)), false);
     if (placed < o.buffets) diags.push({ level: 'avertissement', message: `${placed} buffet(s) placé(s) sur ${o.buffets} demandé(s).` });
   }
 

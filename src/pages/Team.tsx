@@ -59,7 +59,7 @@ export function Team() {
                 <td className="py-2">{m.email || m.userId}</td>
                 <td>
                   {admin ? (
-                    <select aria-label={`Rôle de ${m.email}`} className={`${inputClass} w-auto`} value={m.role} onChange={(e) => act(() => repository.updateMemberRole(m.userId, e.target.value as Role))}>
+                    <select aria-label={`Rôle de ${m.email}`} className={`${inputClass} max-w-56`} value={m.role} onChange={(e) => act(() => repository.updateMemberRole(m.userId, e.target.value as Role))}>
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
                           {ROLE_LABELS[r]}

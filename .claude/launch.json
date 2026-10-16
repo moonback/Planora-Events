@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "planora-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 }
+    { "name": "planora-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 },
+    { "name": "planora-local", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:local", "--", "--port", "5174"], "port": 5174 }
   ]
 }

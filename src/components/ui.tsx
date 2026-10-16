@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 const VARIANTS: Record<Variant, string> = {
@@ -14,10 +14,15 @@ export function Button({ variant = 'secondary', size = 'md', className = '', ...
 }
 
 export function Field({ label, children, hint, error }: { label: string; children: ReactNode; hint?: string; error?: string | null }) {
+  const id = useId();
+  // Nom accessible = libellé seul (sans le texte de l'option sélectionnée d'un <select>).
+  const control = isValidElement<{ 'aria-labelledby'?: string }>(children) ? cloneElement(children, { 'aria-labelledby': id }) : children;
   return (
     <label className="block text-sm">
-      <span className="mb-1 block font-medium text-slate-700">{label}</span>
-      {children}
+      <span id={id} className="mb-1 block font-medium text-slate-700">
+        {label}
+      </span>
+      {control}
       {hint && !error && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
       {error && (
         <span className="mt-1 block text-xs text-red-600" role="alert">

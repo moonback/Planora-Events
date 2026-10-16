@@ -54,13 +54,13 @@ export function Projects() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select aria-label="Filtrer par statut" className={`${inputClass} w-auto`} value={filter} onChange={(e) => setFilter(e.target.value as Filter)}>
+        <select aria-label="Filtrer par statut" className={`${inputClass} max-w-56`} value={filter} onChange={(e) => setFilter(e.target.value as Filter)}>
           <option value="actifs">Actifs</option>
           <option value="favoris">Favoris</option>
           <option value="archives">Archivés</option>
           <option value="tous">Tous</option>
         </select>
-        <select aria-label="Filtrer par type d'événement" className={`${inputClass} w-auto`} value={type} onChange={(e) => setType(e.target.value as EventType | '')}>
+        <select aria-label="Filtrer par type d'événement" className={`${inputClass} max-w-56`} value={type} onChange={(e) => setType(e.target.value as EventType | '')}>
           <option value="">Tous les types</option>
           {EVENT_TYPES.map((t) => (
             <option key={t} value={t}>
